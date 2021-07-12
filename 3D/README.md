@@ -51,6 +51,8 @@ You can also automatically generate all the images using the provided `render.sh
 ./render.sh
 ```
 
+Note that you will have to add the dimensions into the `dim.sh` script for it to work properly.
+
 ## Outfits
 
 I don't know how to export the Blender files in outfits/ correctly. (Viktor has mostly made it work.)
