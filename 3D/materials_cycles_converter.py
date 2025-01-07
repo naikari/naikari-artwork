@@ -1,5 +1,5 @@
 # convert_materials_to_cycles.py
-# 
+#
 # Copyright (C) 5-mar-2012, Silvio Falcinelli. Fixes by others.
 #
 # special thanks to user blenderartists.org cmomoney
@@ -34,13 +34,25 @@ bl_info = {
     "wiki_url": "http://wiki.blender.org/index.php/Extensions:2.6/Py/Scripts/Material/Blender_Cycles_Materials_Converter",
     "category": "Material"}
 
-
 import bpy
 import math
 from math import log
 from math import pow
 from math import exp
 import os.path
+import sys
+
+# Do a version check and exit if bad
+v = bpy.data.version
+vs = v[0]*1e5 + v[1]*1e3 + v[0]
+print(bpy.context.scene.render.engine)
+if vs > 2*1e5 + 90*1e3 + 0:
+    print(f"Invalid version: {v[0]}.{v[1]}.{v[2]}")
+    sys.exit(-1)
+# Already up to date
+if bpy.context.scene.render.engine=='CYCLES':
+    print("Already using CYCLES!")
+    sys.exit(-1)
 
 def AutoNodeOff():
     mats = bpy.data.materials
@@ -132,7 +144,7 @@ def AutoNode(active=False):
 
     else:
         mats = bpy.data.materials
-    
+
 
     for cmat in mats:
         cmat.use_nodes = True
@@ -157,7 +169,7 @@ def AutoNode(active=False):
             Add_Translucent = ''
             Mix_Alpha = ''
             sT = False
-            
+
             for n in TreeNodes.nodes:
                 TreeNodes.nodes.remove(n)
 
@@ -202,6 +214,11 @@ def AutoNode(active=False):
                     shader = TreeNodes.nodes.new('ShaderNodeBsdfPrincipled')
                     shader.location = 0, 470
                     links.new(shader.outputs[0], shout.inputs[0])
+
+                    # Bake AO for diffuse nodes
+                    #texture_node = Treenodes.nodes.new('ShaderNodeTexImage')
+                    #texture_node.name = 'Bake_node'
+
 
             if cmat.raytrace_mirror.use and cmat.raytrace_mirror.reflect_factor > 0.001 and cmat_is_transp:
                 if not shader.type == 'ShaderNodeBsdfGlass':
@@ -432,7 +449,7 @@ class mlrefresh(bpy.types.Operator):
     @classmethod
     def poll(cls, context):
         return True
-    
+
     def execute(self, context):
         AutoNode()
         return {'FINISHED'}
@@ -447,7 +464,7 @@ class mlrefresh_active(bpy.types.Operator):
     @classmethod
     def poll(cls, context):
         return True
-    
+
     def execute(self, context):
         AutoNode(True)
         return {'FINISHED'}
@@ -501,7 +518,7 @@ class OBJECT_PT_scenemassive(bpy.types.Panel):
                     if n.label == 'Locked':
                         locked = True
                         break
-            
+
             row = layout.row()
             row.label(text="Selected: " + cmat.name, icon=("LOCKED" if locked else "UNLOCKED"))
             row.operator("ml.lock", text=("Unlock" if locked else "Lock"))
@@ -527,7 +544,9 @@ for obj in bpy.data.objects:
 bpy.ops.object.delete()
 """
 bpy.context.scene.objects.active = None
-bpy.ops.file.pack_all()
+try:
+    bpy.ops.file.pack_all()
+except:
+    pass
 AutoNode()
 bpy.ops.wm.save_as_mainfile( filepath=outfile )
-
